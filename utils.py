@@ -1,5 +1,6 @@
 import torch
 import scipy.ndimage
+from torch.utils.data import Dataset
 
 
 #####################################################################################################
