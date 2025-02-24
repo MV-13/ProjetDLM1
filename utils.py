@@ -2,6 +2,10 @@ import torch
 import scipy.ndimage
 from torch.utils.data import Dataset
 from PIL import Image
+import skimage
+from torchvision.transforms import Resize, Compose, ToTensor, Normalize
+import matplotlib.pyplot as plt
+import differential_operators as diff
 
 
 #####################################################################################################
@@ -9,11 +13,12 @@ from PIL import Image
 def get_mgrid(sidelen, dim = 2):
     '''
     Returns a flattened grid of (x,y,...) coordinates in a range of -1 to 1.
-    sidelen: int
-    dim: int
+
+    - sidelen : int, giving the size of the grid ;
+    - dim : int, giving the dimension of the grid.
     '''
-    tensors = tuple(dim * [torch.linspace(-1, 1, steps=sidelen)])
-    mgrid = torch.stack(torch.meshgrid(*tensors), dim=-1)
+    tensors = tuple(dim * [torch.linspace(-1, 1, steps = sidelen)])
+    mgrid = torch.stack(torch.meshgrid(*tensors), dim = -1)
     mgrid = mgrid.reshape(-1, dim)
     return mgrid
 
@@ -22,13 +27,15 @@ def get_mgrid(sidelen, dim = 2):
 #####################################################################################################
 def get_cameraman_tensor(sidelength):
     '''
+    Returns a tensor of the cameraman image from skimage.
+    The image is resized to the given sidelength and normalized.
+
+    - sidelength: int, gives the size of the image.
     '''
     img = Image.fromarray(skimage.data.camera())        
-    transform = Compose([
-        Resize(sidelength),
-        ToTensor(),
-        Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))
-    ])
+    transform = Compose([Resize(sidelength),
+                         ToTensor(),
+                         Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))])
     img = transform(img)
     return img
 
@@ -37,18 +44,21 @@ def get_cameraman_tensor(sidelength):
 #####################################################################################################
 class ImageFitting(Dataset):
     '''
+    Returns the pixel values of the cameraman image and their coordinates.
+
+    - sidelength: int, gives the size of the image.
     '''
     def __init__(self, sidelength):
         super().__init__()
         img = get_cameraman_tensor(sidelength)
-        self.pixels = img.permute(1, 2, 0).view(-1, 1)
+        self.pixels = img.permute(1, 2, 0).view(-1, 1) # Flatten image to pixels.
         self.coords = get_mgrid(sidelength, 2)
 
     def __len__(self):
-        return 1
+        return 1 # Dataset treated as a single sample.
 
     def __getitem__(self, idx):    
-        if idx > 0: raise IndexError
+        if idx > 0: raise IndexError # Only index 0 is allowed.
         return self.coords, self.pixels
 
 
@@ -82,17 +92,26 @@ class PoissonEqn(Dataset):
 
 #####################################################################################################
 #####################################################################################################
-def gradients_mse(model_output, coords, gt_gradients):
+def display_img(epoch, step_til_summary, output, coords, loss, size, device):
     '''
-    Returns the mean squared error between the gradients of the model and
-    the ground-truth gradients.
+    Plots the reconstructed image, its gradient and laplacian.
 
-    - model_output: torch.Tensor gradient from the model ;
-    - coords: torch.Tensor ;
-    - gt_gradients: torch.Tensor ground-truth gradients.
+    - epoch : int, current epoch in the training loop ;
+    - step_til_summary : int, how many iterations before a plot ;
+    - output : torch.Tensor, reconstructed image from siren ;
+    - coords : torch.Tensor, coordinates of the pixels ;
+    - loss : torch.Tensor, loss value ;
+    - size : int, size of the image to be displayed ;
+    - device : torch.device, device used for computations
     '''
-    # compute gradients on the model
-    gradients = gradient(model_output, coords)
-    # compare them with the ground-truth
-    gradients_loss = torch.mean((gradients - gt_gradients).pow(2).sum(-1))
-    return gradients_loss
+    if epoch % step_til_summary == 0:
+        print(f'Epoch {epoch}, Loss {loss.item()}')
+        grad = diff.gradient(output, coords)
+        laplacian = diff.laplace(output, coords)
+
+        # Display reconstructed image, its gradient and laplacian.
+        fig, axes = plt.subplots(1, 3, figsize = (18, 6))
+        axes[0].imshow(output.to(device).view(size, size).detach().numpy())
+        axes[1].imshow(grad.to(device).norm(dim = -1).to(device).view(size, size).detach().numpy())
+        axes[2].imshow(laplacian.view(size, size).detach().numpy())
+        plt.show()
