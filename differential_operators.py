@@ -23,7 +23,7 @@ def gradient(y, x, grad_outputs = None):
 def divergence(y, x):
     '''
     Returns the divergence of y w.r.t. x.
-    The divergence corresponds to the sum of the derivates of the componennts of y w.r.t.
+    The divergence corresponds to the sum of the derivatives of the components of y w.r.t.
     the components of x.
 
     - y : torch.Tensor representing the vector field with shape (..., N) where N represents
@@ -42,8 +42,8 @@ def laplace(y, x):
     '''
     Returns the Laplacian of y w.r.t. x.
 
-    - y :
-    - x : 
+    - y : torch.Tensor ;
+    - x : torch.Tensor.
     '''
     grad = gradient(y, x)
     return divergence(grad, x)
