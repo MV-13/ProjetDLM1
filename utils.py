@@ -66,17 +66,22 @@ class ImageFitting(Dataset):
 #####################################################################################################
 class PoissonEqn(Dataset):
     '''
+    Returns th pixels, gradients and laplacian of the cameraman image as a 1D-tensor and 
+    their coordinates as a 2D-tensor.
+
+    - sidelength : int, gives the size of the image.
     '''
     def __init__(self, sidelength):
         super().__init__()
         img = get_cameraman_tensor(sidelength)
         
-        # Compute gradient and laplacian       
-        grads_x = scipy.ndimage.sobel(img.numpy(), axis=1).squeeze(0)[..., None]
-        grads_y = scipy.ndimage.sobel(img.numpy(), axis=2).squeeze(0)[..., None]
+        # Compute gradient horizontal and vertical gradients using sobel operator.       
+        grads_x = scipy.ndimage.sobel(img.numpy(), axis = 1).squeeze(0)[..., None] # Horizontal.
+        grads_y = scipy.ndimage.sobel(img.numpy(), axis = 2).squeeze(0)[..., None] # Vertical
         grads_x, grads_y = torch.from_numpy(grads_x), torch.from_numpy(grads_y)
-                
-        self.grads = torch.stack((grads_x, grads_y), dim=-1).view(-1, 2)
+        self.grads = torch.stack((grads_x, grads_y), dim = -1).view(-1, 2)
+
+        # Compute laplacian using laplace operator.
         self.laplace = scipy.ndimage.laplace(img.numpy()).squeeze(0)[..., None]
         self.laplace = torch.from_numpy(self.laplace)
         
@@ -94,7 +99,7 @@ class PoissonEqn(Dataset):
 #####################################################################################################
 def display_img(epoch, step_til_summary, output, coords, loss, size, device):
     '''
-    Plots the reconstructed image, its gradient and laplacian.
+    Plots the reconstructed image, its gradient and laplacian during training.
 
     - epoch : int, current epoch in the training loop ;
     - step_til_summary : int, how many iterations before a plot ;
