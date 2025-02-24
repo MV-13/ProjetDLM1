@@ -47,3 +47,24 @@ def laplace(y, x):
     '''
     grad = gradient(y, x)
     return divergence(grad, x)
+
+
+#####################################################################################################
+#####################################################################################################
+def jacobian(y, x):
+    '''
+    Returns jacobian of y w.r.t. x.
+
+    - y : torch.Tensor, last dimension must be number of components ;
+    - x : torch.Tensor, last dimension must be number of components.
+    '''
+    # Create empty jacobian tensor of shape (batch, observations, y components, x components)
+    batch_size, num_observations = y.shape[:2]
+    jac = torch.zeros(batch_size, num_observations, y.shape[-1], x.shape[-1]).to(y.device)
+    
+    # calculate dy/dx over batches for each component of y.
+    for i in range(y.shape[-1]):
+        y_flat = y[...,i].view(-1, 1)
+        jac[:, :, i, :] = grad(y_flat, x, torch.ones_like(y_flat), create_graph = True)[0]
+
+    return jac
