@@ -77,3 +77,28 @@ for epoch in range(num_epochs):
 #####################################################################################################
 # EXPERIMENT 3 : SOLVING THE WAVE EQUATION
 #####################################################################################################
+
+# Prepare wavefield dataset.
+batch_size = 5e4
+lambda1 = batch_size/100
+lambda2 = batch_size/10
+wavefield = utils.WaveSource(.4, .01, 1e4)
+dataloader = DataLoader(wavefield, batch_size = batch_size)
+
+# Instantiate model, optimizer and number of epochs.
+siren = models.Siren(in_features = 3, out_features = 1, hidden_features = 512,
+                     hidden_layers = 5, outermost_linear = True).to(device)
+optimizer = optim.Adam(siren.parameters(), lr = 2e-5)
+num_epochs = 1000
+
+# Training loop.
+for epoch in range(num_epochs):
+    for X, y in dataloader:
+        X, y = X.to(device), y.to(device)
+        output, coords = siren(X)
+
+        loss = loss_fn.wave_loss(X, output, lambda1, lambda2)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()

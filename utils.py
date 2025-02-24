@@ -157,3 +157,19 @@ class WaveSource(Dataset):
 
     def __getitem__(self, idx):
         return self.sample[idx]
+
+
+#####################################################################################################
+#####################################################################################################
+def gaussian(x, sigma):
+    '''
+    Returns the value of the 2D-gaussian function (0, sigma) evaluated in x.
+
+    - x : torch.Tensor of shape (batch_size, 3), the last dimension contains 2 space
+    components and 1 time component ;
+    - sigma : float, variance of the gaussian ;
+    '''
+    distance = x[:, 1]**2 + x[:, 2]**2 # Computes distance to origin with space components.
+    gaussian = torch.exp(-distance/2/sigma**2)/2/np.pi/sigma**2
+
+    return gaussian

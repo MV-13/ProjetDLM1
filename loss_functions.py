@@ -1,5 +1,6 @@
 import torch
 import differential_operators as diff
+import utils
 
 
 #####################################################################################################
@@ -36,7 +37,7 @@ def gradients_mse(model_output, coords, gt_gradients):
 
 #####################################################################################################
 #####################################################################################################
-def wave_loss(x, y, t, point_source, lambda1, lambda2):
+def wave_loss(x, y, point_source, lambda1, lambda2):
     '''
     Loss function for the wave equation with initial conditions.
 
@@ -47,14 +48,14 @@ def wave_loss(x, y, t, point_source, lambda1, lambda2):
     '''
     grad = diff.jacobian(y, x) # Shape (batch size, 1, 3).
     hess = diff.jacobian(grad[..., 0, :], x) # Shape (batch size, 3, 3).
-    laplacian = hess[..., 1, 1, None] + hess[..., 2, 2, None] # Sum of space derivates.
+    laplacian = hess[..., 1, 1, None] + hess[..., 2, 2, None] # Sum of space derivatives.
     grad_t2 = hess[..., 0, 0, None] # Second derivates w.r.t. time.
     loss = grad_t2 - laplacian # Wave equation constraint.
 
-
     # Add initial condition constraints.
-    dirichlet_loss = y[x[:, 0] == 0.] - point_source
-    neumann_loss = grad[..., 0]
+    t0_sample = y[x[:, 0] == 0.]
+    dirichlet_loss = t0_sample - utils.gaussian(t0_sample)
+    neumann_loss = grad[..., 0] # Derivative w.r.t. time.
     loss += dirichlet_loss + neumann_loss
 
     return loss
