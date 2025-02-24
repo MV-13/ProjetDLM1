@@ -126,57 +126,34 @@ def display_img(epoch, step_til_summary, output, coords, loss, size, device):
 #####################################################################################################
 class WaveSource(Dataset):
     '''
-    Returns the coordinates and source boundary values for the wave equation.
+    Creates a 2D-tensor dataset of shape (nb of points, 3).
+    The last dimension corresponds to 2 space components and 1 time component.
+    Space components are uniformly sampled between -1 and 1.
+    The time component is slowly increased over time.
+
+    - max_time : float, maximum time value ;
+    - time_interval : float, time step between each observation ;
+    - num_obs : nb of observations to sample for each time step.
     '''
-    def __init__(self, sidelength, source_coords = [0., 0.]):
+    def __init__(self, max_time, time_interval, num_obs):
         super().__init__()
-        torch.manual_seed(0)
-        self.sidelength = sidelength
-        self.mgrid = get_mgrid(self.sidelength).detach()
-        self.N_src_samples = 1000
-        self.sigma = 5e-4
-        self.source_coords = torch.tensor(source_coords).view(-1, 3)
-        self.counter = 0
-        self.full_count = 100e3
+        self.time_steps = torch.arange(0, max_time, time_interval) # List of time steps.
+        samples = []
+
+        # Sample points for each time step.
+        for t in self.time_steps:
+            nb_pts = num_obs
+            if t == 0.:
+                nb_pts *= 100 # Sampling more points at time 0.
+            
+            space = torch.rand((nb_pts, 2)).uniform_(-1, 1) # Space coordinates.
+            time = torch.full((nb_pts, 1), t) # Time step.
+            samples.append(torch.cat((time, space), dim = 1))
+        
+        self.samples = torch.cat(samples, dim = 0)
 
     def __len__(self):
-        return 1
+        return self.samples.shape[0]
 
     def __getitem__(self, idx):
-        start_time = self.source_coords[0, 0]  # Time to apply  initial conditions.
-
-        r = 5e2 * self.sigma * torch.rand(self.N_src_samples, 1).sqrt()
-        phi = 2 * np.pi * torch.rand(self.N_src_samples, 1)
-
-        # Circular sampling.
-        source_coords_x = r * torch.cos(phi) + self.source_coords[0, 1]
-        source_coords_y = r * torch.sin(phi) + self.source_coords[0, 2]
-        source_coords = torch.cat((source_coords_x, source_coords_y), dim=1)
-
-        # uniformly sample domain and include coordinates where source is non-zero 
-        coords = torch.zeros(self.sidelength ** 2, 2).uniform_(-1, 1)
-
-        # slowly grow time values from start time
-        # this currently assumes start_time = 0 and max time value is 0.75. 
-        time = torch.zeros(self.sidelength ** 2, 1).uniform_(0, 0.4 * (self.counter / self.full_count))
-        coords = torch.cat((time, coords), dim=1)
-
-        # make sure we always have training samples at the initial condition
-        coords[-self.N_src_samples:, 1:] = source_coords
-        coords[-2 * self.N_src_samples:, 0] = start_time
-
-        # set up source
-        normalize = 50 * gaussian(torch.zeros(1, 2), mu=torch.zeros(1, 2), sigma=self.sigma, d=2)
-        boundary_values = gaussian(coords[:, 1:], mu=self.source_coords[:, 1:], sigma=self.sigma, d=2)[:, None]
-        boundary_values /= normalize
-
-        # only enforce initial conditions around start_time
-        boundary_values = torch.where((coords[:, 0, None] == start_time), boundary_values, torch.Tensor([0]))
-        dirichlet_mask = (coords[:, 0, None] == start_time)
-
-        boundary_values[boundary_values < 1e-5] = 0.
-
-        self.counter += 1
-
-        return {'coords': coords}, {'source_boundary_values': boundary_values,
-                                    'dirichlet_mask': dirichlet_mask}
+        return self.sample[idx]
