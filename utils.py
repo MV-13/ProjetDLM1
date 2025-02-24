@@ -87,9 +87,9 @@ def gradients_mse(model_output, coords, gt_gradients):
     Returns the mean squared error between the gradients of the model and
     the ground-truth gradients.
 
-    - model_output: torch.Tensor
-    - coords: torch.Tensor
-    - gt_gradients: torch.Tensor
+    - model_output: torch.Tensor gradient from the model ;
+    - coords: torch.Tensor ;
+    - gt_gradients: torch.Tensor ground-truth gradients.
     '''
     # compute gradients on the model
     gradients = gradient(model_output, coords)
