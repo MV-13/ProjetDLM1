@@ -75,7 +75,7 @@ for epoch in range(num_epochs):
 #####################################################################################################
 # EXPERIMENT 3 : SOLVING THE WAVE EQUATION
 #####################################################################################################
-importlib.reload(models)
+importlib.reload(loss_fn)
 # Prepare wavefield dataset.
 batch_size = int(1e4)
 lambda1 = batch_size/100
@@ -100,3 +100,4 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+        print(f'Epoch {epoch}, Loss {loss.item()}')

@@ -50,12 +50,15 @@ def wave_loss(x, y, lambda1, lambda2):
     hess = diff.jacobian(grad[:, 0, :], x) # Shape (batch size, 3, 3).
     laplacian = hess[..., 1, 1, None] + hess[..., 2, 2, None] # Sum of space derivatives.
     grad_t2 = hess[..., 0, 0, None] # Second derivates w.r.t. time.
-    loss = grad_t2 - laplacian # Wave equation constraint.
+    eq_loss = torch.norm(grad_t2 - laplacian, p = 1) # Wave equation constraint.
 
     # Add initial condition constraints.
-    t0_sample = y[x[:, 0] == 0.]
-    dirichlet_loss = t0_sample - utils.gaussian(t0_sample)
-    neumann_loss = grad[..., 0] # Derivative w.r.t. time.
-    loss += dirichlet_loss + neumann_loss
+    mask = (x[:, 0] == 0.).view(-1, 1)
+    y0 = torch.where(mask, y, torch.tensor(0.0, device = y.device))
+    X0 = torch.where(mask, x, torch.tensor(0.0, device = x.device))
+    dirichlet_loss = lambda1 * torch.abs(y0 - utils.gaussian(X0).unsqueeze(1)).sum()
+    neuman_loss = lambda2 * torch.abs(grad[..., 0] * mask).sum() # Derivative w.r.t. time.
+    
+    loss = eq_loss + dirichlet_loss + neuman_loss
 
     return loss
