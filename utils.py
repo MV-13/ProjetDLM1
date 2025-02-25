@@ -5,6 +5,7 @@ from PIL import Image
 import skimage
 from torchvision.transforms import Resize, Compose, ToTensor, Normalize
 import matplotlib.pyplot as plt
+import numpy as np
 import differential_operators as diff
 
 

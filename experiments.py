@@ -77,10 +77,10 @@ for epoch in range(num_epochs):
 #####################################################################################################
 importlib.reload(models)
 # Prepare wavefield dataset.
-batch_size = int(5e4)
+batch_size = int(1e4)
 lambda1 = batch_size/100
 lambda2 = batch_size/10
-wavefield = utils.WaveSource(.4, .01, 10000)
+wavefield = utils.WaveSource(.4, .01, int(1e4))
 dataloader = DataLoader(wavefield, batch_size = batch_size, shuffle = False)
 
 # Instantiate model, optimizer and number of epochs.
@@ -93,7 +93,7 @@ num_epochs = 1000
 for epoch in range(num_epochs):
     for X in dataloader:
         X = X.to(device)
-        output = siren(X)
+        output, coords = siren(X, detach_coords = False)
 
         loss = loss_fn.wave_loss(X, output, lambda1, lambda2)
 
