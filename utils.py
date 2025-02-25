@@ -137,31 +137,32 @@ class WaveSource(Dataset):
     '''
     def __init__(self, max_time, time_interval, num_obs):
         super().__init__()
-        self.time_steps = torch.arange(0, max_time, time_interval) # List of time steps.
-        samples = []
-
+        # List of time steps.
+        self.time_steps = torch.arange(0, max_time, time_interval)
+        
         # Sample points for each time step.
+        samples = []
         for t in self.time_steps:
             nb_pts = num_obs
             if t == 0.:
                 nb_pts *= 100 # Sampling more points at time 0.
             
-            space = torch.rand((nb_pts, 2)).uniform_(-1, 1) # Space coordinates.
-            time = torch.full((nb_pts, 1), t) # Time step.
+            space = torch.rand((nb_pts, 2)).uniform_(-1, 1)
+            time = torch.full((nb_pts, 1), t)
             samples.append(torch.cat((time, space), dim = 1))
         
-        self.samples = torch.cat(samples, dim = 0)
+        self.samples = torch.cat(samples, dim = 0).requires_grad_(True)
 
     def __len__(self):
         return self.samples.shape[0]
 
     def __getitem__(self, idx):
-        return self.sample[idx]
+        return self.samples[idx]
 
 
 #####################################################################################################
 #####################################################################################################
-def gaussian(x, sigma):
+def gaussian(x, sigma = 5e-4):
     '''
     Returns the value of the 2D-gaussian function (0, sigma) evaluated in x.
 

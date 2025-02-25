@@ -53,18 +53,22 @@ def laplace(y, x):
 #####################################################################################################
 def jacobian(y, x):
     '''
-    Returns jacobian of y w.r.t. x.
+    Returns jacobian of y w.r.t. x, of shape (batch_size, 1, 3).
 
-    - y : torch.Tensor, last dimension must be number of components ;
-    - x : torch.Tensor, last dimension must be number of components.
+    - y : torch.Tensor of shape (batch_size, 1) ;
+    - x : torch.Tensor of shape (batch_size, 3) : the last dimension contains 2 space
+    components and 1 time component.
     '''
-    # Create empty jacobian tensor of shape (batch, observations, y components, x components)
-    batch_size, num_observations = y.shape[:2]
-    jac = torch.zeros(batch_size, num_observations, y.shape[-1], x.shape[-1]).to(y.device)
+    # Create empty jacobian tensor of shape (batch_size, 1, 3)
+    batch_size = y.shape[0]
+    jac = torch.zeros(batch_size, y.shape[-1], x.shape[-1], device = y.device)
     
     # calculate dy/dx over batches for each component of y.
     for i in range(y.shape[-1]):
-        y_flat = y[...,i].view(-1, 1)
-        jac[:, :, i, :] = grad(y_flat, x, torch.ones_like(y_flat), create_graph = True)[0]
+        grad_outputs = torch.ones_like(y, device = x.device)
+        jac[:, i, :] = torch.autograd.grad(y, x,
+                                           grad_outputs = grad_outputs,
+                                           create_graph = True,
+                                           retain_graph = True)[0]
 
     return jac

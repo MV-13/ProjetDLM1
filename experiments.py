@@ -11,8 +11,6 @@ import differential_operators as diff
 import loss_functions as loss_fn
 import importlib
 
-importlib.reload(loss_fn)
-
 # Getting device.
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -77,13 +75,13 @@ for epoch in range(num_epochs):
 #####################################################################################################
 # EXPERIMENT 3 : SOLVING THE WAVE EQUATION
 #####################################################################################################
-
+importlib.reload(models)
 # Prepare wavefield dataset.
-batch_size = 5e4
+batch_size = int(5e4)
 lambda1 = batch_size/100
 lambda2 = batch_size/10
-wavefield = utils.WaveSource(.4, .01, 1e4)
-dataloader = DataLoader(wavefield, batch_size = batch_size)
+wavefield = utils.WaveSource(.4, .01, 10000)
+dataloader = DataLoader(wavefield, batch_size = batch_size, shuffle = False)
 
 # Instantiate model, optimizer and number of epochs.
 siren = models.Siren(in_features = 3, out_features = 1, hidden_features = 512,
@@ -93,9 +91,9 @@ num_epochs = 1000
 
 # Training loop.
 for epoch in range(num_epochs):
-    for X, y in dataloader:
-        X, y = X.to(device), y.to(device)
-        output, coords = siren(X)
+    for X in dataloader:
+        X = X.to(device)
+        output = siren(X)
 
         loss = loss_fn.wave_loss(X, output, lambda1, lambda2)
 
