@@ -50,7 +50,7 @@ def wave_loss(x, y, lambda1, lambda2):
     hess = diff.jacobian(grad[:, 0, :], x) # Shape (batch size, 3, 3).
     laplacian = hess[..., 1, 1, None] + hess[..., 2, 2, None] # Sum of space derivatives.
     grad_t2 = hess[..., 0, 0, None] # Second derivates w.r.t. time.
-    eq_loss = torch.norm(grad_t2 - laplacian, p = 1) # Wave equation constraint.
+    eq_loss = torch.abs(grad_t2 - laplacian).sum() # Wave equation constraint.
 
     # Add initial condition constraints.
     mask = (x[:, 0] == 0.).view(-1, 1)
