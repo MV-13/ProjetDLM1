@@ -148,7 +148,7 @@ class WaveSource(Dataset):
             if t == 0.:
                 # At time 0, we sample more points with a gaussian distribution.
                 nb_pts *= 100
-                space = torch.normal(mean = 0, std = 1e-3, size = (nb_pts, 2))
+                space = torch.rand((nb_pts, 2)).uniform_(-.01, .01)
             
             else:
                 # Otherwise, we sample with uniform distribution.
@@ -177,6 +177,7 @@ def gaussian(x, sigma = 5e-4):
     - sigma : float, variance of the gaussian ;
     '''
     distance = x[:, 1]**2 + x[:, 2]**2 # Computes distance to origin with space components.
-    gaussian = torch.exp(-distance/2/sigma**2)/2/np.pi/sigma**2
+    gaussian = torch.exp(-distance/2/sigma**2)/2/np.pi/sigma**2/50
+    clipped_gaussian = torch.where(gaussian < 1e-5, torch.tensor(0.0), gaussian)
 
-    return gaussian
+    return clipped_gaussian
