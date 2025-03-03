@@ -75,7 +75,7 @@ for epoch in range(num_epochs):
 #####################################################################################################
 # EXPERIMENT 3 : SOLVING THE WAVE EQUATION
 #####################################################################################################
-importlib.reload(loss_fn)
+importlib.reload(utils)
 # Prepare wavefield dataset.
 batch_size = int(1e4)
 lambda1 = batch_size/100

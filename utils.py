@@ -146,9 +146,14 @@ class WaveSource(Dataset):
         for t in self.time_steps:
             nb_pts = num_obs
             if t == 0.:
-                nb_pts *= 100 # Sampling more points at time 0.
+                # At time 0, we sample more points with a gaussian distribution.
+                nb_pts *= 100
+                space = torch.normal(mean = 0, std = 1e-3, size = (nb_pts, 2))
             
-            space = torch.rand((nb_pts, 2)).uniform_(-1, 1)
+            else:
+                # Otherwise, we sample with uniform distribution.
+                space = torch.rand((nb_pts, 2)).uniform_(-1, 1)
+            
             time = torch.full((nb_pts, 1), t)
             samples.append(torch.cat((time, space), dim = 1))
         
