@@ -42,6 +42,8 @@ for epoch in range(num_epochs):
     loss.backward()
     optimizer.step()
 
+########################################
+#Test changement d'image
 
 #####################################################################################################
 # EXPERIMENT 2 : SOLVING THE POISSON EQUATION
