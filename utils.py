@@ -26,16 +26,21 @@ def get_mgrid(sidelen, dim = 2):
 
 #####################################################################################################
 #####################################################################################################
-def get_cameraman_tensor(sidelength, imgchoice = skimage.data.camera() ):
+def get_image_tensor(sidelength, imgchoice = skimage.data.camera() ):
     '''
-    Returns a tensor of the cameraman image from skimage.
+    Returns a tensor of the image from skimage.
     The image is resized to the given sidelength and normalized.
 
     - sidelength: int, gives the size of the image.
     '''
     if len(imgchoice.shape) == 3 and imgchoice.shape[2] == 3:
         imgchoice = skimage.color.rgb2gray(imgchoice) 
+    if isinstance(imgchoice, np.ndarray):
+        imgchoice = Image.fromarray((imgchoice * 255).astype(np.uint8))
+    imgchoice = imgchoice.resize((sidelength, sidelength), Image.BILINEAR)
+    imgchoice = 1-(np.array(imgchoice)/255.0)
     img = Image.fromarray(imgchoice)
+    print(imgchoice.shape)
     transform = Compose([Resize(sidelength),
                          ToTensor(),
                          Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))])
@@ -46,13 +51,13 @@ def get_cameraman_tensor(sidelength, imgchoice = skimage.data.camera() ):
 #####################################################################################################
 class ImageFitting(Dataset):
     '''
-    Returns the pixel values of the cameraman image and their coordinates.
+    Returns the pixel values of the image and their coordinates.
 
     - sidelength: int, gives the size of the image.
     '''
     def __init__(self, sidelength, imgchoice):
         super().__init__()
-        img = get_cameraman_tensor(sidelength, imgchoice)
+        img = get_image_tensor(sidelength, imgchoice)
         self.pixels = img.permute(1, 2, 0).view(-1, 1) # Flatten image to pixels.
         self.coords = get_mgrid(sidelength, 2)
 

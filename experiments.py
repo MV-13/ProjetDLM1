@@ -21,8 +21,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #####################################################################################################
 
 # Get coordinates from the cameraman image (X) and the pixel values (y).
-# Images possible : camera, brick, astronaut, immunohistochemistry
-cameraman = utils.ImageFitting(256, skimage.data.astronaut())
+# Images possible : camera, cat, astronaut, immunohistochemistry, brick, coffee, rocket
+cameraman = utils.ImageFitting(256, skimage.data.cat())
 dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
 X, y = next(iter(dataloader))
 X, y = X.to(device), y.to(device)
