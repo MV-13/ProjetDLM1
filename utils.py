@@ -26,20 +26,21 @@ def get_mgrid(sidelen, dim = 2):
 
 #####################################################################################################
 #####################################################################################################
-def get_cameraman_tensor(sidelength):
+def get_cameraman_tensor(sidelength, imgchoice = skimage.data.camera() ):
     '''
     Returns a tensor of the cameraman image from skimage.
     The image is resized to the given sidelength and normalized.
 
     - sidelength: int, gives the size of the image.
     '''
-    img = Image.fromarray(skimage.data.camera())        
+    if len(imgchoice.shape) == 3 and imgchoice.shape[2] == 3:
+        imgchoice = skimage.color.rgb2gray(imgchoice) 
+    img = Image.fromarray(imgchoice)
     transform = Compose([Resize(sidelength),
                          ToTensor(),
                          Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))])
     img = transform(img)
     return img
-
 
 #####################################################################################################
 #####################################################################################################
@@ -49,9 +50,9 @@ class ImageFitting(Dataset):
 
     - sidelength: int, gives the size of the image.
     '''
-    def __init__(self, sidelength):
+    def __init__(self, sidelength, imgchoice):
         super().__init__()
-        img = get_cameraman_tensor(sidelength)
+        img = get_cameraman_tensor(sidelength, imgchoice)
         self.pixels = img.permute(1, 2, 0).view(-1, 1) # Flatten image to pixels.
         self.coords = get_mgrid(sidelength, 2)
 
@@ -61,7 +62,6 @@ class ImageFitting(Dataset):
     def __getitem__(self, idx):    
         if idx > 0: raise IndexError # Only index 0 is allowed.
         return self.coords, self.pixels
-
 
 #####################################################################################################
 #####################################################################################################

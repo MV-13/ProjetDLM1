@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import scipy.ndimage
+import skimage
 import numpy as np
 import matplotlib.pyplot as plt
 import utils
@@ -20,7 +21,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 #####################################################################################################
 
 # Get coordinates from the cameraman image (X) and the pixel values (y).
-cameraman = utils.ImageFitting(256)
+# Images possible : camera, brick, astronaut, immunohistochemistry
+cameraman = utils.ImageFitting(256, skimage.data.astronaut())
 dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
 X, y = next(iter(dataloader))
 X, y = X.to(device), y.to(device)
@@ -44,6 +46,8 @@ for epoch in range(num_epochs):
 
 ########################################
 #Test changement d'image
+
+
 
 #####################################################################################################
 # EXPERIMENT 2 : SOLVING THE POISSON EQUATION
