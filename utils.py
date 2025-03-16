@@ -177,7 +177,7 @@ def gaussian(x, sigma = 5e-4):
     - sigma : float, variance of the gaussian ;
     '''
     distance = x[:, 1]**2 + x[:, 2]**2 # Computes distance to origin with space components.
-    gaussian = torch.exp(-distance/2/sigma**2)/2/np.pi/sigma**2/50
+    gaussian = torch.exp(-distance/2/sigma**2)/np.sqrt(2*np.pi)/sigma/50
     clipped_gaussian = torch.where(gaussian < 1e-5, torch.tensor(0.0), gaussian)
 
     return clipped_gaussian
