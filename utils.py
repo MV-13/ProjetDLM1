@@ -47,6 +47,7 @@ def get_image_tensor(sidelength, imgchoice = skimage.data.camera() ):
     img = transform(img)
     return img
 
+
 #####################################################################################################
 #####################################################################################################
 class ImageFitting(Dataset):
@@ -68,6 +69,7 @@ class ImageFitting(Dataset):
         if idx > 0: raise IndexError # Only index 0 is allowed.
         return self.coords, self.pixels
 
+
 #####################################################################################################
 #####################################################################################################
 class PoissonEqn(Dataset):
@@ -77,9 +79,9 @@ class PoissonEqn(Dataset):
 
     - sidelength : int, gives the size of the image.
     '''
-    def __init__(self, sidelength):
+    def __init__(self, sidelength, imgchoice):
         super().__init__()
-        img = get_cameraman_tensor(sidelength)
+        img = get_image_tensor(sidelength, imgchoice)
         
         # Compute gradient horizontal and vertical gradients using sobel operator.       
         grads_x = scipy.ndimage.sobel(img.numpy(), axis = 1).squeeze(0)[..., None] # Horizontal.

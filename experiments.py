@@ -105,3 +105,39 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         print(f'Epoch {epoch}, Loss {loss.item()}')
+
+
+#####################################################################################################
+# EXPERIMENT 4 : IMPLICIT INPAINTING
+#####################################################################################################
+
+# Get coordinates from the cameraman image (X) and the pixel values (y).
+cameraman = utils.ImageFitting(256, skimage.data.cat())
+dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
+X, y = next(iter(dataloader))
+X, y = X.to(device), y.to(device)
+
+# Create mask.
+mask_ratio = .5
+num_masked_pixels = int(y.shape[1] * mask_ratio)
+mask = torch.ones(y.shape[1], dtype = torch.float32)
+masked_idx = torch.randperm(y.shape[1])[:num_masked_pixels]
+mask[masked_idx] = 0.0
+mask = mask.view(1, y.shape[1], 1)
+
+# Instantiate model, optimizer and number of epochs.
+siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,
+                     hidden_layers = 3, outermost_linear = True).to(device)
+optimizer = optim.Adam(siren.parameters(), lr = 1e-4)
+num_epochs = 1000
+
+# Training loop.
+for epoch in range(num_epochs):
+    output, coords = siren(X)
+
+    loss = loss_fn.MSE(mask * output, mask * y)
+    utils.display_img(epoch, 10, output, coords, loss, 256, device)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
