@@ -17,7 +17,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 #####################################################################################################
-# EXPERIMENT 1 : IMAGE FITTING
+# EXPERIMENT 1 : IMAGE FITTING 
 #####################################################################################################
 
 # Get coordinates from the cameraman image (X) and the pixel values (y).
@@ -44,8 +44,6 @@ for epoch in range(num_epochs):
     loss.backward()
     optimizer.step()
 
-########################################
-#Test changement d'image
 
 
 
