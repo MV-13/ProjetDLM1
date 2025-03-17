@@ -118,12 +118,7 @@ X, y = next(iter(dataloader))
 X, y = X.to(device), y.to(device)
 
 # Create mask.
-mask_ratio = .5
-num_masked_pixels = int(y.shape[1] * mask_ratio)
-mask = torch.ones(y.shape[1], dtype = torch.float32)
-masked_idx = torch.randperm(y.shape[1])[:num_masked_pixels]
-mask[masked_idx] = 0.0
-mask = mask.view(1, y.shape[1], 1)
+mask = utils.mask(.99, 256)
 
 # Instantiate model, optimizer and number of epochs.
 siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,

@@ -188,3 +188,21 @@ def gaussian(x, sigma = 5e-4):
     clipped_gaussian = torch.where(gaussian < 1e-5, torch.tensor(0.0), gaussian)
 
     return clipped_gaussian
+
+
+#####################################################################################################
+#####################################################################################################
+def mask(ratio, img_size):
+    '''
+    Returns a mask of shape (1, img_size**2, 1) with random pixels uniformly set to 0.
+
+    - ratio : float between 0.0 and 1.0, the proportion of pixels to mask ;
+    - img_size : int, size of the image to which the mask will be applied ;
+    '''
+    num_masked_pixels = int(img_size**2 * ratio)
+    mask = torch.ones(img_size**2, dtype = torch.float32)
+    masked_idx = torch.randperm(img_size**2)[:num_masked_pixels]
+    mask[masked_idx] = 0.0
+    mask = mask.view(1, img_size**2, 1)
+
+    return mask
