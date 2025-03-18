@@ -116,6 +116,7 @@ cameraman = utils.ImageFitting(256, skimage.data.cat())
 dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
 X, y = next(iter(dataloader))
 X, y = X.to(device), y.to(device)
+y.requires_grad_(True)
 
 # Create mask.
 mask = utils.mask(.99, 256)
@@ -123,16 +124,24 @@ mask = utils.mask(.99, 256)
 # Instantiate model, optimizer and number of epochs.
 siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,
                      hidden_layers = 3, outermost_linear = True).to(device)
-optimizer = optim.Adam(siren.parameters(), lr = 1e-4)
+standard = models.standard_network(activation = nn.ReLU(), in_features=2, out_features=1, hidden_features=256,
+                                               hidden_layers=3, outermost_linear=True).to(device)
+optim_siren = optim.Adam(siren.parameters(), lr = 1e-4)
+optim_std = optim.Adam(standard.parameters(), lr = 1e-4)
 num_epochs = 1000
 
 # Training loop.
 for epoch in range(num_epochs):
-    output, coords = siren(X)
+    output_siren, coords_siren = siren(X)
+    output_std, coords_std = standard(X)
 
-    loss = loss_fn.MSE(mask * output, mask * y)
-    utils.display_img(epoch, 10, output, coords, loss, 256, device)
+    loss_siren = loss_fn.MSE(mask * output_siren, mask * y)
+    loss_std = loss_fn.MSE(mask * output_std, mask * y)
+    utils.display_img(epoch, 10, output_siren, coords_siren, loss_siren, 256, device)
 
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+    optim_siren.zero_grad()
+    optim_std.zero_grad()
+    loss_siren.backward()
+    loss_std.backward()
+    optim_siren.step()
+    optim_std.step()

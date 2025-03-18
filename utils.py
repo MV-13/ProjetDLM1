@@ -204,5 +204,6 @@ def mask(ratio, img_size):
     masked_idx = torch.randperm(img_size**2)[:num_masked_pixels]
     mask[masked_idx] = 0.0
     mask = mask.view(1, img_size**2, 1)
+    mask.requires_grad_(True)
 
     return mask

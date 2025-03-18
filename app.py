@@ -300,8 +300,7 @@ for epoch in range(num_epochs):
 def inpainting_page():
     st.title("Inpainting implicite")
     
-    st.markdown("""
-    Cette section utilise un réseau SIREN pour apprendre à compléter une image.
+    st.markdown("""Cette section utilise un réseau SIREN pour apprendre à compléter une image.
     Le réseau apprend à mapper des coordonnées spatiales (x,y) vers des valeurs de pixels.
     """)
     
@@ -312,37 +311,65 @@ def inpainting_page():
     image_option = st.sidebar.selectbox(
         "Image source:",
         ("camera", "cat", "astronaut", "immunohistochemistry", "brick", "coffee", "rocket"),
-        index=1
-    )
+        index=1)
     
-    image_size = st.sidebar.slider("Taille de l'image:", min_value=64, max_value=512, value=256, step=32)
+    image_size = st.sidebar.slider(
+        "Taille de l'image:",
+        min_value=64, max_value=512,
+        value=256, step=32)
     
     # Paramètres du modèle SIREN
     st.sidebar.subheader("Paramètres du modèle SIREN")
-    hidden_features_siren = st.sidebar.slider("Nombre de neurones cachés du modèle SIREN:", min_value=64, max_value=512, value=256, step=32)
-    hidden_layers_siren = st.sidebar.slider("Nombre de couches cachées du modèle SIREN:", min_value=1, max_value=5, value=3)
+
+    hidden_features_siren = st.sidebar.slider(
+        "Nombre de neurones cachés du modèle SIREN:",
+        min_value=64, max_value=512,
+        value=256, step=32)
+    
+    hidden_layers_siren = st.sidebar.slider(
+        "Nombre de couches cachées du modèle SIREN:",
+        min_value=1, max_value=5,
+        value=3, step=1)
     
     # Paramètres du modèle standard
     st.sidebar.subheader("Paramètres du modèle standard")
-    activation_option = st.sidebar.selectbox("Fonction d'activation:",
-                                             ("ReLU", "Sigmoid", "Tanh", "LeakyReLU"),
-                                             index = 1)
-    hidden_features_std = st.sidebar.slider("Nombre de neurones cachés du modèle standard:", min_value=64, max_value=512, value=256, step=32)
-    hidden_layers_std = st.sidebar.slider("Nombre de couches cachées du modèle standard:", min_value=1, max_value=5, value=3)
+
+    activation_option = st.sidebar.selectbox(
+        "Fonction d'activation:",
+        ("ReLU", "Sigmoid", "Tanh", "LeakyReLU"),
+        index = 1)
+    
+    hidden_features_std = st.sidebar.slider(
+        "Nombre de neurones cachés du modèle standard:",
+        min_value=64, max_value=512,
+        value=256, step=32)
+
+    hidden_layers_std = st.sidebar.slider(
+        "Nombre de couches cachées du modèle standard:",
+        min_value=1, max_value=5,
+        value=3, step=1)
 
     # Paramètres du masque
     st.sidebar.subheader("Paramètres du masque")
-    mask_ratio = st.sidebar.slider("Proportion de pixels masqués:", min_value=.5, max_value=1.0, value=.8, step=.01)
+
+    context_ratio = st.sidebar.slider(
+        "Proportion de pixels conservés:",
+        min_value=0.0, max_value=1.0,
+        value=0.1, step=0.01)
 
     # Paramètres d'entraînement
     st.sidebar.subheader("Entraînement")
+
     learning_rate = st.sidebar.select_slider(
         "Taux d'apprentissage:",
         options=[1e-5, 2e-5, 5e-5, 1e-4, 2e-4, 5e-4, 1e-3],
         format_func=lambda x: f"{x:.5f}",
-        value=1e-4
-    )
-    num_epochs = st.sidebar.slider("Nombre d'époques:", min_value=5, max_value=100, value=10, step=5)
+        value=1e-4)
+    
+    num_epochs = st.sidebar.slider(
+        "Nombre d'époques:",
+        min_value=5, max_value=100,
+        value=10, step=5)
     
     # Lancement de l'entraînement
     if st.sidebar.button("Lancer l'entraînement"):
@@ -367,13 +394,23 @@ def inpainting_page():
             X, y = X.to(device), y.to(device)
             
             # Instanciation des modèles, de l'optimiseur et du masque.
-            siren = models.Siren(in_features=2, out_features=1, hidden_features=hidden_features_siren,
-                                hidden_layers=hidden_layers_siren, outermost_linear=True).to(device)
-            standard = models.standard_network(activation = chosen_fct, in_features=2, out_features=1, hidden_features=hidden_features_std,
-                                               hidden_layers=hidden_layers_std, outermost_linear=True).to(device)
+            siren = models.Siren(
+                in_features=2, out_features=1,
+                hidden_features=hidden_features_siren,
+                hidden_layers=hidden_layers_siren,
+                outermost_linear=True).to(device)
+            
+            standard = models.standard_network(
+                activation = chosen_fct,
+                in_features=2, out_features=1,
+                hidden_features=hidden_features_std,
+                hidden_layers=hidden_layers_std,
+                outermost_linear=True).to(device)
+            
             optim_siren = optim.Adam(siren.parameters(), lr=learning_rate)
             optim_std = optim.Adam(standard.parameters(), lr = learning_rate)
-            mask = utils.mask(mask_ratio, image_size)
+
+            mask = utils.mask(1-context_ratio, image_size)
             
         # Boucle d'entraînement adaptée pour Streamlit
         losses_siren = []
@@ -390,10 +427,12 @@ def inpainting_page():
             output_siren, coords_siren = siren(X)
             output_std, coords_std = standard(X)
             
-            loss_siren = loss_fn.MSE(mask * output_siren, mask * y)
-            loss_std = loss_fn.MSE(mask * output_std, mask * y)
+            loss_siren = loss_fn.MSE(mask*output_siren, mask*y)
+            loss_std = loss_fn.MSE(mask*output_std, mask*y)
+
             loss_total_siren = loss_fn.MSE(output_siren, y)
             loss_total_std = loss_fn.MSE(output_std, y)
+            
             losses_siren.append(loss_total_siren.item())
             losses_std.append(loss_total_std.item())
             
@@ -404,7 +443,7 @@ def inpainting_page():
 
             if epoch % 5 == 0 or epoch == num_epochs - 1:
                 # Affichage de l'image
-                fig, ax = plt.subplots(1, 2, figsize=(8, 8))
+                fig, ax = plt.subplots(1, 2, figsize=(8,8))
                 
                 # Récupérer les prédictions et les reformer en image
                 pred_siren = output_siren.detach().reshape(image_size, image_size).cpu().numpy()
@@ -412,7 +451,7 @@ def inpainting_page():
                 
                 ax[0].imshow(pred_siren, cmap="viridis")
                 ax[0].set_title(f"SIREN")
-                ax[1].imshow(pred_std, cmap = "viridis")
+                ax[1].imshow(pred_std, cmap="viridis")
                 ax[1].set_title(activation_option)
                 ax[0].axis("off")
                 ax[1].axis("off")
@@ -421,9 +460,9 @@ def inpainting_page():
                 siren_container.pyplot(fig)
                 
                 # Mettre à jour les métriques
-                metrics_fig, metrics_ax = plt.subplots(figsize=(4, 4))
-                metrics_ax.plot(losses_siren, label = "SIREN")
-                metrics_ax.plot(losses_std, label = activation_option)
+                metrics_fig, metrics_ax = plt.subplots(figsize=(4,4))
+                metrics_ax.plot(losses_siren, label="SIREN")
+                metrics_ax.plot(losses_std, label=activation_option)
                 metrics_ax.set_xlabel("Époque")
                 metrics_ax.set_ylabel("Perte MSE")
                 metrics_ax.set_title("Évolution de la perte")
@@ -433,8 +472,10 @@ def inpainting_page():
             
             optim_siren.zero_grad()
             optim_std.zero_grad()
+
             loss_siren.backward()
             loss_std.backward()
+
             optim_siren.step()
             optim_std.step()
         
@@ -442,7 +483,7 @@ def inpainting_page():
         
         # Affichage du graphique de perte final
         st.subheader("Évolution de la perte")
-        fig, ax = plt.subplots(figsize=(10, 4))
+        fig, ax = plt.subplots(figsize=(10,4))
         ax.plot(losses_siren)
         ax.plot(losses_std)
         ax.set_xlabel("Époque")
@@ -485,32 +526,39 @@ def inpainting_page():
         # Afficher un code d'exemple
         st.subheader("Code pour l'expérience 'Image Fitting'")
         st.code("""
-# Get coordinates from the image (X) and the pixel values (y).
-# Images possible : camera, cat, astronaut, immunohistochemistry, brick, coffee, rocket
-img = utils.ImageFitting(256, skimage.data.cat())
-dataloader = DataLoader(img, batch_size = 1, pin_memory = True, num_workers = 0)
+# Get coordinates from the cameraman image (X) and the pixel values (y).
+cameraman = utils.ImageFitting(256, skimage.data.cat())
+dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
 X, y = next(iter(dataloader))
 X, y = X.to(device), y.to(device)
-                
+y.requires_grad_(True)
+
 # Create mask.
 mask = utils.mask(.99, 256)
 
 # Instantiate model, optimizer and number of epochs.
 siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,
                      hidden_layers = 3, outermost_linear = True).to(device)
-optimizer = optim.Adam(siren.parameters(), lr = 1e-4)
-num_epochs = 500
+standard = models.standard_network(activation = nn.ReLU(), in_features=2, out_features=1, hidden_features=256,
+                                               hidden_layers=3, outermost_linear=True).to(device)
+optim_siren = optim.Adam(siren.parameters(), lr = 1e-4)
+optim_std = optim.Adam(standard.parameters(), lr = 1e-4)
+num_epochs = 1000
 
 # Training loop.
 for epoch in range(num_epochs):
-    output, coords = siren(X)
+    output_siren, coords_siren = siren(X)
+    output_std, coords_std = standard(X)
 
-    loss = loss_fn.MSE(mask * output, mask * y)
-    utils.display_img(epoch, 10, output, coords, loss, 256, device)
+    loss_siren = loss_fn.MSE(mask * output_siren, mask * y)
+    loss_std = loss_fn.MSE(mask * output_std, mask * y)
 
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+    optim_siren.zero_grad()
+    optim_std.zero_grad()
+    loss_siren.backward()
+    loss_std.backward()
+    optim_siren.step()
+    optim_std.step()
         """)
         
         # Afficher une explication du code
@@ -519,7 +567,7 @@ for epoch in range(num_epochs):
         Le code ci-dessus:
         
         1. **Charge une image** et prépare les données d'entrée (coordonnées X) et les valeurs cibles y (intensités des pixels).
-        2. **Initialise un réseau SIREN** avec:
+        2. **Initialise un réseau SIREN** et un réseau ReLU avec:
            - 2 entrées (coordonnées x,y) ;
            - 1 sortie (intensité du pixel) ;
            - 3 couches cachées avec 256 neurones chacune.
