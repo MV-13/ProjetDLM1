@@ -26,14 +26,21 @@ def get_mgrid(sidelen, dim = 2):
 
 #####################################################################################################
 #####################################################################################################
-def get_cameraman_tensor(sidelength):
+def get_image_tensor(sidelength, imgchoice = skimage.data.camera() ):
     '''
-    Returns a tensor of the cameraman image from skimage.
+    Returns a tensor of the image from skimage.
     The image is resized to the given sidelength and normalized.
 
     - sidelength: int, gives the size of the image.
     '''
-    img = Image.fromarray(skimage.data.camera())        
+    if len(imgchoice.shape) == 3 and imgchoice.shape[2] == 3:
+        imgchoice = skimage.color.rgb2gray(imgchoice) 
+    if isinstance(imgchoice, np.ndarray):
+        imgchoice = Image.fromarray((imgchoice * 255).astype(np.uint8))
+    imgchoice = imgchoice.resize((sidelength, sidelength), Image.BILINEAR)
+    imgchoice = 1-(np.array(imgchoice)/255.0)
+    img = Image.fromarray(imgchoice)
+    print(imgchoice.shape)
     transform = Compose([Resize(sidelength),
                          ToTensor(),
                          Normalize(torch.Tensor([0.5]), torch.Tensor([0.5]))])
@@ -45,13 +52,13 @@ def get_cameraman_tensor(sidelength):
 #####################################################################################################
 class ImageFitting(Dataset):
     '''
-    Returns the pixel values of the cameraman image and their coordinates.
+    Returns the pixel values of the image and their coordinates.
 
     - sidelength: int, gives the size of the image.
     '''
-    def __init__(self, sidelength):
+    def __init__(self, sidelength, imgchoice):
         super().__init__()
-        img = get_cameraman_tensor(sidelength)
+        img = get_image_tensor(sidelength, imgchoice)
         self.pixels = img.permute(1, 2, 0).view(-1, 1) # Flatten image to pixels.
         self.coords = get_mgrid(sidelength, 2)
 
@@ -72,9 +79,9 @@ class PoissonEqn(Dataset):
 
     - sidelength : int, gives the size of the image.
     '''
-    def __init__(self, sidelength):
+    def __init__(self, sidelength, imgchoice):
         super().__init__()
-        img = get_cameraman_tensor(sidelength)
+        img = get_image_tensor(sidelength, imgchoice)
         
         # Compute gradient horizontal and vertical gradients using sobel operator.       
         grads_x = scipy.ndimage.sobel(img.numpy(), axis = 1).squeeze(0)[..., None] # Horizontal.
@@ -181,3 +188,22 @@ def gaussian(x, sigma = 5e-4):
     clipped_gaussian = torch.where(gaussian < 1e-5, torch.tensor(0.0), gaussian)
 
     return clipped_gaussian
+
+
+#####################################################################################################
+#####################################################################################################
+def mask(ratio, img_size):
+    '''
+    Returns a mask of shape (1, img_size**2, 1) with random pixels uniformly set to 0.
+
+    - ratio : float between 0.0 and 1.0, the proportion of pixels to mask ;
+    - img_size : int, size of the image to which the mask will be applied ;
+    '''
+    num_masked_pixels = int(img_size**2 * ratio)
+    mask = torch.ones(img_size**2, dtype = torch.float32)
+    masked_idx = torch.randperm(img_size**2)[:num_masked_pixels]
+    mask[masked_idx] = 0.0
+    mask = mask.view(1, img_size**2, 1)
+    mask.requires_grad_(True)
+
+    return mask
