@@ -179,7 +179,7 @@ def image_fitting_page():
             img = utils.ImageFitting(image_size, img_choice)
             dataloader = DataLoader(img, batch_size=1, pin_memory=True, num_workers=0)
             X, y = next(iter(dataloader))
-            X = X.to(device), y.to(device)
+            X, y = X.to(device), y.to(device)
             
             # Instanciation des modèles, de l'optimiseur et du masque.
             siren = models.Siren(
@@ -547,11 +547,12 @@ def poisson_page():
         # Affichage du graphique de perte final
         st.subheader("Évolution de la perte")
         fig, ax = plt.subplots(figsize=(10,4))
-        ax.plot(losses_siren)
-        ax.plot(losses_std)
+        ax.plot(losses_siren, label="SIREN")
+        ax.plot(losses_std, label=activation_option)
         ax.set_xlabel("Époque")
         ax.set_ylabel("Perte MSE")
         ax.grid(True)
+        ax.legend()
         st.pyplot(fig)
         
         # Comparaison image originale vs prédiction
@@ -585,13 +586,13 @@ def poisson_page():
 
         with col8:
             st.subheader("Gradient")
-            img_gradient = diff.gradient(predicted_img, coords_std)
+            img_gradient = diff.gradient(output_std, coords_std)
             img_gradient = np.clip(img_gradient, .0, 1.0)
             st.image(img_gradient, use_container_width=True)
         
         with col9:
             st.subheader("Laplacien")
-            img_laplace = diff.gradient(predicted_img, coords_std)
+            img_laplace = diff.gradient(output_std, coords_std)
             img_laplace = np.clip(img_laplace, .0, 1.0)
             st.image(img_laplace, use_container_width=True)
 
@@ -601,59 +602,62 @@ def poisson_page():
         # Afficher un code d'exemple
         st.subheader("Code pour l'expérience 'Equation de Poisson'")
         st.code("""
-# Get coordinates from the cameraman image (X) and the pixel values (y).
-cameraman = utils.PoissonEqn(128, skimage.data.cat())
-dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
-X, y = next(iter(dataloader))
-X = X.to(device)
-y = {key: value.to(device) for key, value in y.items()}
+            # Get coordinates from the cameraman image (X) and the pixel values (y).
+            cameraman = utils.PoissonEqn(128, skimage.data.cat())
+            dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
+            X, y = next(iter(dataloader))
+            X = X.to(device)
+            y = {key: value.to(device) for key, value in y.items()}
 
-# Instantiate model, optimizer and number of epochs.
-siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,
-                     hidden_layers = 3, outermost_linear = True).to(device)
-standard = models.standard_network(activation = nn.ReLU(), in_features=2, out_features=1, hidden_features=256,
-                                               hidden_layers=3, outermost_linear=True).to(device)
-optim_siren = optim.Adam(siren.parameters(), lr = 1e-4)
-optim_std = optim.Adam(standard.parameters(), lr = 1e-4)
-num_epochs = 1000
+            # Instantiate model, optimizer and number of epochs.
+            siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,
+                                hidden_layers = 3, outermost_linear = True).to(device)
+            standard = models.standard_network(activation = nn.ReLU(), in_features=2, out_features=1, hidden_features=256,
+                                                        hidden_layers=3, outermost_linear=True).to(device)
+            optim_siren = optim.Adam(siren.parameters(), lr = 1e-4)
+            optim_std = optim.Adam(standard.parameters(), lr = 1e-4)
+            num_epochs = 1000
 
-# Training loop.
-for epoch in range(num_epochs):
-    output_siren, coords_siren = siren(X)
-    output_std, coords_std = standard(X)
+            # Training loop.
+            for epoch in range(num_epochs):
+                output_siren, coords_siren = siren(X)
+                output_std, coords_std = standard(X)
 
-    loss_siren = loss_fn.gradients_mse(output_siren, coords_siren, y['grads'])
-    loss_std = loss_fn.gradients_mse(output_std, coords_std, y['grads'])
-    utils.display_img(epoch, 10, output_siren, coords_siren, loss_siren, 128, device)
+                loss_siren = loss_fn.gradients_mse(output_siren, coords_siren, y['grads'])
+                loss_std = loss_fn.gradients_mse(output_std, coords_std, y['grads'])
+                utils.display_img(epoch, 10, output_siren, coords_siren, loss_siren, 128, device)
 
-    optim_siren.zero_grad()
-    optim_std.zero_grad()
-    loss_siren.backward()
-    loss_std.backward()
-    optim_siren.step()
-    optim_std.step()
+                optim_siren.zero_grad()
+                optim_std.zero_grad()
+                loss_siren.backward()
+                loss_std.backward()
+                optim_siren.step()
+                optim_std.step()
         """)
         
         # Afficher une explication du code
         st.subheader("Explication du code")
         st.markdown("""
-        Le code ci-dessus:
-        
-        1. **Charge une image** et prépare les données d'entrée (coordonnées X) et les valeurs cibles y (intensités des pixels).
-        2. **Initialise un réseau SIREN** et un réseau ReLU avec:
-           - 2 entrées (coordonnées x,y) ;
-           - 1 sortie (intensité du pixel) ;
-           - 3 couches cachées avec 256 neurones chacune.
-        3. **Crée un masque** pour masquer des pixels aléatoires de l'image.
-        4. **Configure l'optimiseur Adam** avec un taux d'apprentissage de 0.0001.
-        5. **Exécute une boucle d'entraînement** sur 500 époques où:
-           - Le modèle génère des prédictions pour chaque coordonnée ;
-           - L'erreur quadratique moyenne (MSE) est calculée uniquement sur les pixels non-masqués ;
-           - L'image prédite est affichée périodiquement ;
-           - Les poids du réseau sont mis à jour par rétropropagation.
-        
-        Dans l'interface Streamlit, vous pouvez personnaliser ces paramètres et observer en temps réel
-        comment le réseau apprend à représenter l'image sélectionnée.
+            Le code ci-dessus:
+            
+            1. **Charge une image** et prépare les données d'entrée (coordonnées X)
+               et les valeurs cibles y (intensités des pixels).
+            2. **Initialise un réseau SIREN** et un réseau ReLU avec:
+                - 2 entrées (coordonnées x,y) ;
+                - 1 sortie (intensité du pixel) ;
+                - 3 couches cachées avec 256 neurones chacune.
+            3. **Crée un masque** pour masquer des pixels aléatoires de l'image.
+            4. **Configure l'optimiseur Adam** avec un taux d'apprentissage de 0.0001.
+            5. **Exécute une boucle d'entraînement** sur 500 époques où:
+                - Le modèle génère des prédictions pour chaque coordonnée ;
+                - L'erreur quadratique moyenne (MSE) est calculée uniquement
+                  sur les pixels non-masqués ;
+                - L'image prédite est affichée périodiquement ;
+                - Les poids du réseau sont mis à jour par rétropropagation.
+            
+            Dans l'interface Streamlit, vous pouvez personnaliser ces paramètres
+            et observer en temps réel comment le réseau apprend à représenter
+            l'image sélectionnée.
         """)
 
 # Fonction pour la page Inpainting implicite
@@ -745,11 +749,11 @@ def inpainting_page():
         # Code d'expérimentation modifié pour Streamlit
         with st.spinner("Chargement de l'image..."):
             # Déterminer l'image à charger et la fonction d'activation choisie
-            img_data = st_utils.choose_image(image_option)
+            img_choice = st_utils.choose_image(image_option)
             chosen_fct = st_utils.choose_function(activation_option)
             
             # Préparation des données
-            img = utils.ImageFitting(image_size, img_data)
+            img = utils.ImageFitting(image_size, img_choice)
             dataloader = DataLoader(img, batch_size=1, pin_memory=True, num_workers=0)
             X, y = next(iter(dataloader))
             X, y = X.to(device), y.to(device)
@@ -762,7 +766,7 @@ def inpainting_page():
                 outermost_linear=True).to(device)
             
             standard = models.standard_network(
-                activation = chosen_fct,
+                activation=chosen_fct,
                 in_features=2, out_features=1,
                 hidden_features=hidden_features_std,
                 hidden_layers=hidden_layers_std,
