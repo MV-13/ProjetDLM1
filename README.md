@@ -39,6 +39,8 @@ The setting is the same as for the image fitting task except that models are sup
 # PYTHON CODE
 - **utils.py**: useful functions for our work, such as dataset classes for experiments, gaussian function, display functions, etc. ;
 - **models.py**: sine layer, SIREN and ReLU model classes ;
+- **loss_functions.py**: contains loss functions for our different tasks ;
+- **differential_operators.py**: contains operators such as gradient, divergence, laplacian and jacobian.
 - **experiments.py**: contains 4 ready-to-be-ran code sections for our 4 experiments ;
 - **stramlit_utils.py**: a few shortcut functions for streamlit ;
 - **app.py**: streamlit app containing 3 sections for the image fitting, Poisson equation and inpainting tasks. The user is free to choose model parameters such as number of hidden layers and hidden neurons, learning rates, number of epochs, proportion of masked pixels, etc. The models are trained and display their progress in real time.
