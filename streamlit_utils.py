@@ -19,6 +19,10 @@ import loss_functions as loss_fn
 ###############################################################################################
 ###############################################################################################
 def choose_image(image_option):
+    '''
+    Returns the chosen by the user from skimaga.data.
+    Choices are: camera, cat, astronaut, immunohistochemistry, brick, coffee, rocket.
+    '''
     if image_option == "camera":
         choice = skimage.data.camera()
     elif image_option == "cat":
@@ -40,6 +44,10 @@ def choose_image(image_option):
 ###############################################################################################
 ###############################################################################################
 def choose_function(activation_option):
+    '''
+    Returns the chosen activation function by the user.
+    Choices are: ReLU, Sigmoid, Tanh, LeakyReLU.
+    '''
     if activation_option == "ReLU":
         choice = nn.ReLU()
     elif activation_option == "Sigmoid":
