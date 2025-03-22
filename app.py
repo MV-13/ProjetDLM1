@@ -457,6 +457,7 @@ def poisson_page():
             dataloader = DataLoader(img, batch_size=1, pin_memory=True, num_workers=0)
             X, y = next(iter(dataloader))
             X = X.to(device)
+            ysave = y.copy()
             y = {key: value.to(device) for key, value in y.items()}
             
             # Instanciation des modèles, de l'optimiseur et du masque.
@@ -554,45 +555,19 @@ def poisson_page():
         st.pyplot(fig)
         
         # Comparaison image originale vs prédiction
-        col4, col5, col6 = st.columns(3)
-
-        with col4:
-            st.subheader("SIREN")
-            predicted_img = output_siren.detach().reshape(image_size, image_size).cpu().numpy()
-            predicted_img = np.clip(predicted_img, .0, 1.0)
-            st.image(predicted_img, use_container_width=True)
+        col5, col6 = st.columns(2)
 
         with col5:
-            st.subheader("Gradient")
-            img_gradient = diff.gradient(output_siren, coords_siren)
-            img_gradient = np.clip(img_gradient, .0, 1.0)
-            st.image(img_gradient, use_container_width=True)
-        
+            st.subheader("SIREN")
+            siren_img = output_siren.detach().reshape(image_size, image_size).cpu().numpy()
+            siren_img = np.clip(siren_img, .0, 1.0)
+            st.image(siren_img, use_container_width=True)
+                
         with col6:
-            st.subheader("Laplacien")
-            img_laplace = diff.laplace(output_siren, coords_siren)
-            img_laplace = np.clip(img_laplace, .0, 1.0)
-            st.image(predicted_img, use_container_width=True)
-
-        col7, col8, col9 = st.columns(3)
-
-        with col7:
             st.subheader(activation_option)
-            predicted_img = output_std.detach().reshape(image_size, image_size).cpu().numpy()
-            predicted_img = np.clip(predicted_img, .0, 1.0)
-            st.image(predicted_img, use_container_width=True)
-
-        with col8:
-            st.subheader("Gradient")
-            img_gradient = diff.gradient(output_std, coords_std)
-            img_gradient = np.clip(img_gradient, .0, 1.0)
-            st.image(img_gradient, use_container_width=True)
-        
-        with col9:
-            st.subheader("Laplacien")
-            img_laplace = diff.gradient(output_std, coords_std)
-            img_laplace = np.clip(img_laplace, .0, 1.0)
-            st.image(img_laplace, use_container_width=True)
+            std_image = output_std.detach().reshape(image_size, image_size).cpu().numpy()
+            std_image = np.clip(std_image, .0, 1.0)
+            st.image(std_image, use_container_width=True)
 
     else:
         st.info("Configurez les paramètres dans la barre latérale et cliquez sur 'Lancer l'entraînement' pour commencer.")
