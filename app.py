@@ -555,15 +555,15 @@ def poisson_page():
         st.pyplot(fig)
         
         # Comparaison image originale vs prédiction
-        col5, col6 = st.columns(2)
+        col3, col4 = st.columns(2)
 
-        with col5:
+        with col3:
             st.subheader("SIREN")
             siren_img = output_siren.detach().reshape(image_size, image_size).cpu().numpy()
             siren_img = np.clip(siren_img, .0, 1.0)
             st.image(siren_img, use_container_width=True)
                 
-        with col6:
+        with col4:
             st.subheader(activation_option)
             std_image = output_std.detach().reshape(image_size, image_size).cpu().numpy()
             std_image = np.clip(std_image, .0, 1.0)
