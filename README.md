@@ -41,7 +41,7 @@ The setting is the same as for the image fitting task except that models are sup
 - **models.py**: sine layer, SIREN and ReLU model classes ;
 - **loss_functions.py**: contains loss functions for our different tasks ;
 - **differential_operators.py**: contains operators such as gradient, divergence, laplacian and jacobian.
-- **experiments.py**: contains 4 ready-to-be-ran code sections for our 4 experiments ;
+- **experiments.py**: contains 4 ready-to-be-ran code sections for our 4 experiments. Each training loop displays results for a SIREN model and a ReLU model every 10 epochs but the display windows from matplotlib must be closed in order for training to continue. For faster training, simply set the "utils.display" function as commentary or see the streamlit app ;
 - **stramlit_utils.py**: a few shortcut functions for streamlit ;
 - **app.py**:streamlit app containing 3 sections for the image fitting, Poisson equation and inpainting tasks. Two models are trained simulyaneously for each task : a SIREN and a more standard network. The user is free to choose:
     - model parameters such as number of hidden layers and hidden neurons, learning rates, number of epochs, proportion of masked pixels, etc ;
