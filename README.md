@@ -5,7 +5,7 @@ This repository contains all our work on implicit neural representation with per
 # EXPERIMENTS
 ## IMAGE FITTING
 This experiment involves fitting an image with a SIREN model and comparing the result and convergence speed with a ReLU/tanh model. The user can choose from a list of image from 
-skimage.data : cat, 
+skimage.data: camera, cat, astronaut, immunohistochemistry, brick, coffee, rocket.
 
 Each model receives as input a 2D-grid whose coordinates are normalized in [-1, 1] and predicts pixel values for each coordinate.
 
@@ -33,7 +33,7 @@ Unfortunately, this experiment was not fully concluded. The code runs correctly 
 ## IMPLICIT INPAINTING
 Reconstructing a full image based on a masked version. We again make a comparison between SIREN models and ReLU/tanh models.
 
-The setting is the same as for the image fitting task except that models are supervised using the MSE between their masked prediction and the masked image : in other words, the MSE is calculated only on known pixels and pixels reconstructed by the models are ignored.
+The setting is the same as for the image fitting task except that models are supervised using the MSE between their masked prediction and the masked image: in other words, the MSE is calculated only on known pixels and pixels reconstructed by the models are ignored.
 
 
 # PYTHON CODE
@@ -43,4 +43,8 @@ The setting is the same as for the image fitting task except that models are sup
 - **differential_operators.py**: contains operators such as gradient, divergence, laplacian and jacobian.
 - **experiments.py**: contains 4 ready-to-be-ran code sections for our 4 experiments ;
 - **stramlit_utils.py**: a few shortcut functions for streamlit ;
-- **app.py**: streamlit app containing 3 sections for the image fitting, Poisson equation and inpainting tasks. The user is free to choose model parameters such as number of hidden layers and hidden neurons, learning rates, number of epochs, proportion of masked pixels, etc. The models are trained and display their progress in real time.
+- **app.py**:streamlit app containing 3 sections for the image fitting, Poisson equation and inpainting tasks. Two models are trained simulyaneously for each task : a SIREN and a more standard network. The user is free to choose:
+    - model parameters such as number of hidden layers and hidden neurons, learning rates, number of epochs, proportion of masked pixels, etc ;
+    - the image to process from the following list : camera, cat, astronaut, immunohistochemistry, brick, coffee, rocket ; 
+    - the activation function for the standard model: ReLU, Sigmoid, Tanh, LeakyReLU.
+Both models are trained and display their progress in real time allowing a quick comparison of their performance.

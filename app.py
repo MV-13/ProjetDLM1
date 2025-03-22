@@ -48,11 +48,21 @@ def presentation_page():
         ## À propos de cette application
         
         Cette application démontre l'utilisation des réseaux SIREN
-        (Sinusoidal Representation Networks) pour l'ajustement d'images.
-        Le réseau apprend à représenter une image en associant des coordonnées 
-        spatiales (x,y) à des valeurs de pixels.
+        (Sinusoidal Representation Networks) pour diverse tâches de traitement d'image.
+        Le réseau apprend à représenter une image en associant des des valeurs de pixels
+        à des coordonnées spatiales (x,y).
         
-        Utilisez la barre latérale pour accéder à la page d'expérimentation "Image Fitting".
+        Utilisez la barre latérale pour accéder aux 3 expérimentations:
+        - **Image Fitting**: apprendre à représenter une image ;
+        - **Équation de Poisson**: représenter une image à partir de son gradient ;
+        - **Inpainting implicite**: compléter une image masquée.
+                
+        Chaque expérimentation compare en direct les performances d'un réseau SIREN
+        et d'un réseau standard.
+                
+        Les réseaux reçoivent comme input une grille de coordonnées de résolution choisie
+        par l'utilisateur normalisée dans [-1, 1] et retournent les valeurs de pixels
+        pour chaque coordonnée.
     """)
     
     st.image(
@@ -85,12 +95,12 @@ def presentation_page():
     st.markdown("""
         ## Comment utiliser cette application
         
-        1. Naviguez vers la page "Image Fitting" en utilisant le menu dans la barre latérale
-        2. Choisissez une image source parmi les options disponibles
-        3. Ajustez les paramètres du modèle et de l'entraînement selon vos préférences
+        1. Naviguez vers la page "Image Fitting" en utilisant le menu dans la barre latérale ;
+        2. Choisissez une image source parmi les options disponibles et sa résolution ;
+        3. Ajustez les paramètres des modèles et de l'entraînement selon vos préférences ;
         4. Lancez l'entraînement et observez comment le réseau SIREN apprend
-           à représenter l'image
-        5. Examinez les résultats et l'évolution de la perte pendant l'entraînement
+           à représenter l'image ;
+        5. Examinez les résultats et l'évolution de la perte pendant l'entraînement.
     """)
 
 # Fonction pour la page Image Fitting
@@ -98,8 +108,8 @@ def image_fitting_page():
     st.title("Ajustement d'Image (Image Fitting)")
     
     st.markdown("""
-        Cette section utilise un réseau SIREN pour apprendre à représenter une image.
-        Le réseau apprend à mapper des coordonnées spatiales (x,y) vers des valeurs de pixels.
+        Dans cette section, les modèles sont supervisés par les vraies valeurs de pixels
+        de l'image source. 
         """)
     
     # Options de configuration
@@ -112,7 +122,7 @@ def image_fitting_page():
         index=1)
     
     image_size = st.sidebar.slider(
-        "Taille de l'image:",
+        "Résolution de l'image:",
         min_value=64, max_value=512,
         value=256, step=32)
     
@@ -181,7 +191,7 @@ def image_fitting_page():
             X, y = next(iter(dataloader))
             X, y = X.to(device), y.to(device)
             
-            # Instanciation des modèles, de l'optimiseur et du masque.
+            # Instanciation des modèles et de l'optimiseur.
             siren = models.Siren(
                 in_features=2, out_features=1,
                 hidden_features=hidden_features_siren,
@@ -302,28 +312,27 @@ def image_fitting_page():
         # Afficher un code d'exemple
         st.subheader("Code pour l'expérience 'Image Fitting'")
         st.code("""
-            # Get coordinates X and pixel values y from the chosen image.
-            # Images possible : camera, cat, astronaut, immunohistochemistry, brick,
-            # coffee, rocket.
+            # Choose an image from skimage.data in the following list :
+            # camera, cat, astronaut, immunohistochemistry, brick, coffee, rocket.
             img = utils.ImageFitting(256, skimage.data.cat())
             dataloader = DataLoader(img, batch_size=1, pin_memory=True, num_workers=0)
             X, y = next(iter(dataloader))
             X, y = X.to(device), y.to(device)
 
-            # Instantiate model, optimizer and number of epochs.
+            # Instantiate siren model, ReLU model, optimizer and number of epochs.
             siren = models.Siren(
                 in_features=2, out_features=1,
                 hidden_features=256, hidden_layers=3,
                 outermost_linear=True).to(device)
 
             standard = models.standard_network(
-                activation = nn.ReLU(),
+                activation=nn.ReLU(),
                 in_features=2, out_features=1,
                 hidden_features=256, hidden_layers=3,
                 outermost_linear=True).to(device)
-            
-            optim_siren = optim.Adam(siren.parameters(), lr = 1e-4)
-            optim_std = optim.Adam(standard.parameters(), lr = 1e-4)
+
+            optim_siren = optim.Adam(siren.parameters(), lr=1e-4)
+            optim_std = optim.Adam(standard.parameters(), lr=1e-4)
             num_epochs = 500
 
             # Training loop.
@@ -373,11 +382,15 @@ def image_fitting_page():
 def poisson_page():
     st.title("Résoudre l'équation de Poisson")
     
-    st.markdown("""
-        Cette section utilise un réseau SIREN pour fitter une image en étant supervisé
-        uniquement par sa dérivée spatiale. Le réseau apprend à mapper des coordonnées
-        spatiales (x,y) vers des valeurs de pixels.
-        """)
+    st.markdown(r"""
+        Dans cette section, les réseaux ne sont supervisés que par la dérivée spatiale 
+        de l'image (son gradient), ce qui équivaut à résoudre l'équation de Poisson:
+        $$
+                \nabla \phi = \nabla f
+        $$
+        où $\phi$ est un réseau de neurones et $f$ l'image originale.
+        """,
+        unsafe_allow_html=True)
     
     # Options de configuration
     st.sidebar.header("Paramètres")
@@ -389,7 +402,7 @@ def poisson_page():
         index=1)
     
     image_size = st.sidebar.slider(
-        "Taille de l'image:",
+        "Résolution de l'image:",
         min_value=64, max_value=512,
         value=256, step=32)
     
@@ -602,20 +615,26 @@ def poisson_page():
         # Afficher un code d'exemple
         st.subheader("Code pour l'expérience 'Equation de Poisson'")
         st.code("""
-            # Get coordinates from the cameraman image (X) and the pixel values (y).
-            cameraman = utils.PoissonEqn(128, skimage.data.cat())
-            dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
+            # Choose your image as previously.
+            img = utils.PoissonEqn(128, skimage.data.cat())
+            dataloader = DataLoader(img, batch_size=1, pin_memory=True, num_workers=0)
             X, y = next(iter(dataloader))
             X = X.to(device)
             y = {key: value.to(device) for key, value in y.items()}
 
             # Instantiate model, optimizer and number of epochs.
-            siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,
-                                hidden_layers = 3, outermost_linear = True).to(device)
-            standard = models.standard_network(activation = nn.ReLU(), in_features=2, out_features=1, hidden_features=256,
-                                                        hidden_layers=3, outermost_linear=True).to(device)
-            optim_siren = optim.Adam(siren.parameters(), lr = 1e-4)
-            optim_std = optim.Adam(standard.parameters(), lr = 1e-4)
+            siren = models.Siren(in_features=2, out_features=1,
+                                hidden_features=256, hidden_layers=3,
+                                outermost_linear=True).to(device)
+
+            standard = models.standard_network(
+                activation=nn.ReLU(),
+                in_features=2, out_features=1,
+                hidden_features=256, hidden_layers=3,
+                outermost_linear=True).to(device)
+
+            optim_siren = optim.Adam(siren.parameters(), lr=1e-4)
+            optim_std = optim.Adam(standard.parameters(), lr=1e-4)
             num_epochs = 1000
 
             # Training loop.
@@ -623,9 +642,9 @@ def poisson_page():
                 output_siren, coords_siren = siren(X)
                 output_std, coords_std = standard(X)
 
+                # The networks are supervised using the gradient of the image.
                 loss_siren = loss_fn.gradients_mse(output_siren, coords_siren, y['grads'])
                 loss_std = loss_fn.gradients_mse(output_std, coords_std, y['grads'])
-                utils.display_img(epoch, 10, output_siren, coords_siren, loss_siren, 128, device)
 
                 optim_siren.zero_grad()
                 optim_std.zero_grad()
@@ -633,7 +652,7 @@ def poisson_page():
                 loss_std.backward()
                 optim_siren.step()
                 optim_std.step()
-        """)
+            """)
         
         # Afficher une explication du code
         st.subheader("Explication du code")
@@ -646,12 +665,11 @@ def poisson_page():
                 - 2 entrées (coordonnées x,y) ;
                 - 1 sortie (intensité du pixel) ;
                 - 3 couches cachées avec 256 neurones chacune.
-            3. **Crée un masque** pour masquer des pixels aléatoires de l'image.
-            4. **Configure l'optimiseur Adam** avec un taux d'apprentissage de 0.0001.
-            5. **Exécute une boucle d'entraînement** sur 500 époques où:
+            3. **Configure l'optimiseur Adam** avec un taux d'apprentissage de 0.0001.
+            4. **Exécute une boucle d'entraînement** sur 500 époques où:
                 - Le modèle génère des prédictions pour chaque coordonnée ;
-                - L'erreur quadratique moyenne (MSE) est calculée uniquement
-                  sur les pixels non-masqués ;
+                - L'erreur quadratique moyenne (MSE) est calculée par rapport au
+                  gradient de l'image ;
                 - L'image prédite est affichée périodiquement ;
                 - Les poids du réseau sont mis à jour par rétropropagation.
             
@@ -665,8 +683,11 @@ def inpainting_page():
     st.title("Inpainting implicite")
     
     st.markdown("""
-        Cette section utilise un réseau SIREN pour apprendre à compléter une image.
-        Le réseau apprend à mapper des coordonnées spatiales (x,y) vers des valeurs de pixels.
+        Dans cette section, les réseaux sont supervisés par une version masquée de l'image.
+        La perte optimisée par les réseaux corresponds à la MSE calculée uniquement sur
+        les pixels non-masqués.
+        En revanche, la perte affichée sur les graphiques correspond à la MSE calculée
+        entre la prédiction des modèles et l'image originale. 
     """)
     
     # Options de configuration
@@ -679,7 +700,7 @@ def inpainting_page():
         index=1)
     
     image_size = st.sidebar.slider(
-        "Taille de l'image:",
+        "Résolution de l'image:",
         min_value=64, max_value=512,
         value=256, step=32)
     
@@ -891,61 +912,73 @@ def inpainting_page():
         # Afficher un code d'exemple
         st.subheader("Code pour l'expérience 'Image Fitting'")
         st.code("""
-# Get coordinates from the cameraman image (X) and the pixel values (y).
-cameraman = utils.ImageFitting(256, skimage.data.cat())
-dataloader = DataLoader(cameraman, batch_size = 1, pin_memory = True, num_workers = 0)
-X, y = next(iter(dataloader))
-X, y = X.to(device), y.to(device)
-y.requires_grad_(True)
+            # Get coordinates from the cameraman image (X) and the pixel values (y).
+            img = utils.ImageFitting(256, skimage.data.cat())
+            dataloader = DataLoader(img, batch_size=1, pin_memory=True, num_workers=0)
+            X, y = next(iter(dataloader))
+            X, y = X.to(device), y.to(device)
+            y.requires_grad_(True)
 
-# Create mask.
-mask = utils.mask(.99, 256)
+            # Create mask.
+            mask = utils.mask(.99, 256)
 
-# Instantiate model, optimizer and number of epochs.
-siren = models.Siren(in_features = 2, out_features = 1, hidden_features = 256,
-                     hidden_layers = 3, outermost_linear = True).to(device)
-standard = models.standard_network(activation = nn.ReLU(), in_features=2, out_features=1, hidden_features=256,
-                                               hidden_layers=3, outermost_linear=True).to(device)
-optim_siren = optim.Adam(siren.parameters(), lr = 1e-4)
-optim_std = optim.Adam(standard.parameters(), lr = 1e-4)
-num_epochs = 1000
+            # Instantiate model, optimizer and number of epochs.
+            siren = models.Siren(
+                in_features=2, out_features=1,
+                hidden_features=256, hidden_layers=3,
+                outermost_linear=True).to(device)
 
-# Training loop.
-for epoch in range(num_epochs):
-    output_siren, coords_siren = siren(X)
-    output_std, coords_std = standard(X)
+            standard = models.standard_network(
+                activation=nn.ReLU(),
+                in_features=2, out_features=1,
+                hidden_features=256, hidden_layers=3,
+                outermost_linear=True).to(device)
 
-    loss_siren = loss_fn.MSE(mask * output_siren, mask * y)
-    loss_std = loss_fn.MSE(mask * output_std, mask * y)
+            optim_siren = optim.Adam(siren.parameters(), lr=1e-4)
+            optim_std = optim.Adam(standard.parameters(), lr=1e-4)
+            num_epochs = 1000
 
-    optim_siren.zero_grad()
-    optim_std.zero_grad()
-    loss_siren.backward()
-    loss_std.backward()
-    optim_siren.step()
-    optim_std.step()
-        """)
+            # Training loop.
+            for epoch in range(num_epochs):
+                output_siren, coords_siren = siren(X)
+                output_std, coords_std = standard(X)
+
+                # The networks are supervised using only non-masked pixels.
+                loss_siren = loss_fn.MSE(mask * output_siren, mask * y)
+                loss_std = loss_fn.MSE(mask * output_std, mask * y)
+
+                # Display results every 10 epochs.
+                utils.display_img(epoch, 10, output_siren, coords_siren, loss_siren, 256, device)
+                utils.display_img(epoch, 10, output_std, coords_std, loss_siren, 256, device)
+
+                optim_siren.zero_grad()
+                optim_std.zero_grad()
+                loss_siren.backward()
+                loss_std.backward()
+                optim_siren.step()
+                optim_std.step()
+            """)
         
         # Afficher une explication du code
         st.subheader("Explication du code")
         st.markdown("""
-        Le code ci-dessus:
-        
-        1. **Charge une image** et prépare les données d'entrée (coordonnées X) et les valeurs cibles y (intensités des pixels).
-        2. **Initialise un réseau SIREN** et un réseau ReLU avec:
-           - 2 entrées (coordonnées x,y) ;
-           - 1 sortie (intensité du pixel) ;
-           - 3 couches cachées avec 256 neurones chacune.
-        3. **Crée un masque** pour masquer des pixels aléatoires de l'image.
-        4. **Configure l'optimiseur Adam** avec un taux d'apprentissage de 0.0001.
-        5. **Exécute une boucle d'entraînement** sur 500 époques où:
-           - Le modèle génère des prédictions pour chaque coordonnée ;
-           - L'erreur quadratique moyenne (MSE) est calculée uniquement sur les pixels non-masqués ;
-           - L'image prédite est affichée périodiquement ;
-           - Les poids du réseau sont mis à jour par rétropropagation.
-        
-        Dans l'interface Streamlit, vous pouvez personnaliser ces paramètres et observer en temps réel
-        comment le réseau apprend à représenter l'image sélectionnée.
+            Le code ci-dessus:
+            
+            1. **Charge une image** et prépare les données d'entrée (coordonnées X) et les valeurs cibles y (intensités des pixels).
+            2. **Initialise un réseau SIREN** et un réseau ReLU avec:
+            - 2 entrées (coordonnées x,y) ;
+            - 1 sortie (intensité du pixel) ;
+            - 3 couches cachées avec 256 neurones chacune.
+            3. **Crée un masque** pour masquer des pixels aléatoires de l'image.
+            4. **Configure l'optimiseur Adam** avec un taux d'apprentissage de 0.0001.
+            5. **Exécute une boucle d'entraînement** sur 500 époques où:
+            - Le modèle génère des prédictions pour chaque coordonnée ;
+            - L'erreur quadratique moyenne (MSE) est calculée uniquement sur les pixels non-masqués ;
+            - L'image prédite est affichée périodiquement ;
+            - Les poids du réseau sont mis à jour par rétropropagation.
+            
+            Dans l'interface Streamlit, vous pouvez personnaliser ces paramètres et observer en temps réel
+            comment le réseau apprend à représenter l'image sélectionnée.
         """)
 
 

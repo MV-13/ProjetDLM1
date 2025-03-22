@@ -67,7 +67,7 @@ for epoch in range(num_epochs):
 # EXPERIMENT 2 : SOLVING THE POISSON EQUATION
 #####################################################################################################
 
-# Choose your image is previously.
+# Choose your image as previously.
 img = utils.PoissonEqn(128, skimage.data.cat())
 dataloader = DataLoader(img, batch_size=1, pin_memory=True, num_workers=0)
 X, y = next(iter(dataloader))
