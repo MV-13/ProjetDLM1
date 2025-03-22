@@ -65,11 +65,6 @@ def presentation_page():
         pour chaque coordonnée.
     """)
     
-    st.image(
-        "https://via.placeholder.com/800x400.png?text=SIREN+Neural+Networks", 
-        caption="Illustration de réseaux SIREN",
-        use_container_width=True)
-    
     st.markdown("""
         ## Les réseaux SIREN
         
@@ -92,16 +87,6 @@ def presentation_page():
         * skimage
     """)
     
-    st.markdown("""
-        ## Comment utiliser cette application
-        
-        1. Naviguez vers la page "Image Fitting" en utilisant le menu dans la barre latérale ;
-        2. Choisissez une image source parmi les options disponibles et sa résolution ;
-        3. Ajustez les paramètres des modèles et de l'entraînement selon vos préférences ;
-        4. Lancez l'entraînement et observez comment le réseau SIREN apprend
-           à représenter l'image ;
-        5. Examinez les résultats et l'évolution de la perte pendant l'entraînement.
-    """)
 
 # Fonction pour la page Image Fitting
 def image_fitting_page():
@@ -168,7 +153,7 @@ def image_fitting_page():
     
     num_epochs = st.sidebar.slider(
         "Nombre d'époques:",
-        min_value=5, max_value=100,
+        min_value=5, max_value=500,
         value=10, step=5)
     
     # Lancement de l'entraînement
@@ -448,7 +433,7 @@ def poisson_page():
     
     num_epochs = st.sidebar.slider(
         "Nombre d'époques:",
-        min_value=5, max_value=100,
+        min_value=5, max_value=500,
         value=10, step=5)
     
     # Lancement de l'entraînement
@@ -754,7 +739,7 @@ def inpainting_page():
     
     num_epochs = st.sidebar.slider(
         "Nombre d'époques:",
-        min_value=5, max_value=100,
+        min_value=5, max_value=500,
         value=10, step=5)
     
     # Lancement de l'entraînement
