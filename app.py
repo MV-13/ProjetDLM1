@@ -154,7 +154,7 @@ def image_fitting_page():
     num_epochs = st.sidebar.slider(
         "Nombre d'époques:",
         min_value=5, max_value=500,
-        value=10, step=5)
+        value=100, step=5)
     
     # Lancement de l'entraînement
     if st.sidebar.button("Lancer l'entraînement"):
@@ -434,7 +434,7 @@ def poisson_page():
     num_epochs = st.sidebar.slider(
         "Nombre d'époques:",
         min_value=5, max_value=500,
-        value=10, step=5)
+        value=100, step=5)
     
     # Lancement de l'entraînement
     if st.sidebar.button("Lancer l'entraînement"):
@@ -721,7 +721,7 @@ def inpainting_page():
     num_epochs = st.sidebar.slider(
         "Nombre d'époques:",
         min_value=5, max_value=500,
-        value=10, step=5)
+        value=100, step=5)
     
     # Lancement de l'entraînement
     if st.sidebar.button("Lancer l'entraînement"):
