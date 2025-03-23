@@ -7,7 +7,6 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 import skimage.data
 import importlib
-
 import torch.nn as nn
 import scipy.ndimage
 import skimage
