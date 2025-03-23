@@ -475,7 +475,7 @@ def poisson_page():
                 outermost_linear=True).to(device)
             
             optim_siren = optim.Adam(siren.parameters(), lr=learning_rate)
-            optim_std = optim.Adam(standard.parameters(), lr = learning_rate)
+            optim_std = optim.Adam(standard.parameters(), lr=learning_rate)
         
         # Boucle d'entraînement adaptée pour Streamlit
         losses_siren = []
@@ -555,15 +555,21 @@ def poisson_page():
         st.pyplot(fig)
         
         # Comparaison image originale vs prédiction
-        col3, col4 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
-        with col3:
+        with col1:
+            st.subheader("Originale")
+            original_img = y['pixels'].reshape(image_size, image_size).cpu().numpy()
+            original_img = np.clip(original_img, .0, 1.0)
+            st.image(original_img, use_container_width=True)
+
+        with col2:
             st.subheader("SIREN")
             siren_img = output_siren.detach().reshape(image_size, image_size).cpu().numpy()
             siren_img = np.clip(siren_img, .0, 1.0)
             st.image(siren_img, use_container_width=True)
                 
-        with col4:
+        with col3:
             st.subheader(activation_option)
             std_image = output_std.detach().reshape(image_size, image_size).cpu().numpy()
             std_image = np.clip(std_image, .0, 1.0)
