@@ -18,7 +18,6 @@ import differential_operators as diff
 import loss_functions as loss_fn
 import streamlit_utils as st_utils
 
-
 # Configuration de la page
 st.set_page_config(
     page_title="Application SIREN",
