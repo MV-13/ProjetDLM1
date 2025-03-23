@@ -1,6 +1,11 @@
 # DEEP LEARNING PROJECT : Marine VIEILLARD, Romain HÛ
 This repository contains all our work on implicit neural representation with periodic activation functions.
 
+# HOW TO RUN THE APP
+To launch the application, open a terminal in the project directory and run: `streamlit run app.py`.
+
+Make sure you have all dependencies installed. If needed, install them with: `pip install -r requirements.txt`.
+
 
 # EXPERIMENTS
 ## IMAGE FITTING
